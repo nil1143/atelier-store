@@ -1,8 +1,13 @@
-import { eq, isNotNull } from "drizzle-orm";
+import { desc, eq, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { cacheLife } from "next/cache";
 import { db } from "@/db";
-import { categories, products, type homepageSection } from "@/db/schema";
+import {
+  categories,
+  products,
+  type categoryKind,
+  type homepageSection,
+} from "@/db/schema";
 
 // The two category axes are the same table joined twice, so each needs an alias.
 const department = alias(categories, "department");
@@ -133,6 +138,26 @@ export async function getHomepageSection(
   return rows.map(toProduct);
 }
 
+/** How many of the newest pieces the New Arrivals page lists. */
+const NEW_ARRIVALS_LIMIT = 24;
+
+/**
+ * The newest pieces by the date they entered the catalogue, which is the fact
+ * `isNew` and the `new-arrivals` homepage section only approximate — the badge
+ * is set by hand and that section is curated. `slug` breaks ties so a reseed
+ * that lands several rows on the same timestamp still paginates predictably.
+ */
+export async function getNewArrivals(): Promise<Product[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  const rows = await selectProducts()
+    .orderBy(desc(products.createdAt), products.slug)
+    .limit(NEW_ARRIVALS_LIMIT);
+
+  return rows.map(toProduct);
+}
+
 export async function getProductBySlug(
   slug: string,
 ): Promise<Product | undefined> {
@@ -158,22 +183,95 @@ export async function getProductSlugs(): Promise<string[]> {
   return rows.map((r) => r.slug);
 }
 
-/** Homepage tiles: the categories given tile art, in `sortOrder`. */
-export async function getCollectionTiles(): Promise<CollectionTile[]> {
+/**
+ * Which axis a category sits on: `department` (women, men) or `type` (bags,
+ * shoes, …). The `/collections` index groups by it; nothing else needs it.
+ */
+export type CategoryKind = (typeof categoryKind.enumValues)[number];
+
+export type Category = {
+  slug: string;
+  name: string;
+  kind: CategoryKind;
+  /** Tile art, or null for a category that has been given none. */
+  image: string | null;
+};
+
+const categoryColumns = {
+  slug: categories.slug,
+  name: categories.name,
+  kind: categories.kind,
+  image: categories.tileImage,
+};
+
+/**
+ * Slugs are unique across both category axes, so a slug identifies one
+ * category without knowing which axis it sits on.
+ */
+export async function getCategoryBySlug(
+  slug: string,
+): Promise<Category | undefined> {
   "use cache";
   cacheLife("minutes");
 
   const rows = await db
-    .select({
-      slug: categories.slug,
-      name: categories.name,
-      image: categories.tileImage,
-    })
+    .select(categoryColumns)
     .from(categories)
-    .where(isNotNull(categories.tileImage))
-    .orderBy(categories.sortOrder);
+    .where(eq(categories.slug, slug))
+    .limit(1);
 
-  return rows.flatMap((r) =>
-    r.image === null ? [] : [{ slug: r.slug, name: r.name, image: r.image }],
+  return rows[0];
+}
+
+/**
+ * Everything filed under one category, on whichever axis it belongs to: a
+ * department slug matches `departmentId`, a type slug matches `productTypeId`.
+ * Matching both columns keeps the caller from having to know the axis.
+ *
+ * Newest first, with `slug` as the tie-break, for the same reason
+ * `getNewArrivals` orders that way — `sortOrder` only ranks the curated
+ * homepage grids and is not meaningful across a whole category.
+ */
+export async function getProductsByCategory(slug: string): Promise<Product[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  const rows = await selectProducts()
+    .where(or(eq(department.slug, slug), eq(productType.slug, slug)))
+    .orderBy(desc(products.createdAt), products.slug);
+
+  return rows.map(toProduct);
+}
+
+/**
+ * Every category, both axes, in `sortOrder` — the order the storefront has
+ * always shown them in. The single source of truth for listing categories.
+ */
+export async function getCategories(): Promise<Category[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  return db.select(categoryColumns).from(categories).orderBy(categories.sortOrder);
+}
+
+/** Homepage tiles: the subset of categories given tile art, in `sortOrder`. */
+export async function getCollectionTiles(): Promise<CollectionTile[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  const all = await getCategories();
+
+  return all.flatMap((c) =>
+    c.image === null ? [] : [{ slug: c.slug, name: c.name, image: c.image }],
   );
+}
+
+/** Drives `generateStaticParams`, which must return at least one param. */
+export async function getCategorySlugs(): Promise<string[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  const all = await getCategories();
+
+  return all.map((c) => c.slug);
 }

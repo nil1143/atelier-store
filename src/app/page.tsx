@@ -120,7 +120,12 @@ export default async function Home() {
       {/* Shop by category */}
       <section className="border-t border-line pt-16 pb-16 md:pt-24 md:pb-24">
         <div className="container-page">
-          <h2 className="text-heading mb-8 md:mb-12">Shop by category</h2>
+          <div className="mb-8 flex items-end justify-between gap-6 md:mb-12">
+            <h2 className="text-heading">Shop by category</h2>
+            <Link href="/collections" className="link-nav link-inline shrink-0">
+              View all
+            </Link>
+          </div>
           <ul className="grid grid-cols-2 gap-x-3 gap-y-10 lg:grid-cols-4 lg:gap-x-4">
             {collections.map((c) => (
               <li key={c.slug}>

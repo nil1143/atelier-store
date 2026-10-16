@@ -313,19 +313,50 @@
     gap: 0.25rem;
   }
 
-  /* Flush grid with 1px hairline gutters */
+  /* Flush grid with 1px hairline gutters. The rules are drawn by the cells
+     themselves, not by a gap over a tinted container -- a partial last row
+     (one shoe, two bags) would otherwise leave the empty tracks showing as a
+     slab of border colour. */
   .product-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    background: var(--border);
     border-block: 1px solid var(--border);
   }
 
-  .product-grid > * { background: var(--bg); }
+  .product-grid > * {
+    border-top: 1px solid var(--border);
+    border-inline-start: 1px solid var(--border);
+  }
+
+  /* First row and first column sit against the container's own edges. */
+  .product-grid > :nth-child(-n + 2) { border-top: 0; }
+  .product-grid > :nth-child(2n + 1) { border-inline-start: 0; }
+
+  /* A category with fewer pieces than a full row would stretch each cell to a
+     quarter of the viewport and strand them against the left edge. Below a
+     full row, cap the cells at the width they have in a full row and centre
+     them instead; the rules above and below still run edge to edge. */
+  .product-grid:not(:has(> :nth-child(2))) {
+    grid-template-columns: minmax(0, 22rem);
+    justify-content: center;
+  }
 
   @media (min-width: 1024px) {
     .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .product-grid > :nth-child(-n + 4) { border-top: 0; }
+    .product-grid > :nth-child(2n + 1) { border-inline-start: 1px solid var(--border); }
+    .product-grid > :nth-child(4n + 1) { border-inline-start: 0; }
+
+    .product-grid:not(:has(> :nth-child(2))) {
+      grid-template-columns: minmax(0, 22rem);
+    }
+    .product-grid:has(> :nth-child(2)):not(:has(> :nth-child(3))) {
+      grid-template-columns: repeat(2, minmax(0, 22rem));
+    }
+    .product-grid:has(> :nth-child(3)):not(:has(> :nth-child(4))) {
+      grid-template-columns: repeat(3, minmax(0, 22rem));
+    }
+    .product-grid:not(:has(> :nth-child(4))) { justify-content: center; }
   }
 
   /* Gallery thumbnail — the frame itself is .card-media; this adds only size
