@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Atelier Store
 
-## Getting Started
+Next.js (App Router) + TypeScript + Tailwind CSS, with Better Auth, Drizzle ORM and Neon Postgres.
 
-First, run the development server:
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local   # then fill in DATABASE_URL and BETTER_AUTH_SECRET
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required env vars are validated on first use (`src/lib/env.ts`), so `npm run build` needs them set too.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/
+    api/auth/[...all]/route.ts   Better Auth route handler
+    products/[slug]/page.tsx     Product detail page
+    layout.tsx, page.tsx         Root layout, homepage
+  components/
+    product-card.tsx, site-header.tsx, site-footer.tsx, icons.tsx
+  db/
+    index.ts                     Drizzle client (Neon HTTP driver)
+    schema/index.ts              Schema barrel
+    schema/catalog.ts            categories + products tables
+    seed.mts                     Catalog seed data (npm run db:seed)
+  lib/
+    auth.ts                      Better Auth server instance
+    auth-client.ts               Better Auth React client
+    env.ts                       Server env access
+    catalog.ts                   Catalog queries + formatting (Product,
+                                  formatPrice, stockLabels, getProductBySlug)
+drizzle.config.ts                drizzle-kit config
+```
 
-## Learn More
+The homepage and `/products/[slug]` read the catalog from Postgres through `src/lib/catalog.ts`. Product imagery is still placeholder Unsplash data, generated in `src/db/seed.mts`.
 
-To learn more about Next.js, take a look at the following resources:
+Because `cacheComponents` is on, every query in `catalog.ts` is wrapped in `"use cache"`, and the database must be seeded before `npm run build` — `generateStaticParams` has to return at least one product.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script | Purpose |
+| --- | --- |
+| `dev` / `build` / `start` | Next.js |
+| `lint`, `typecheck` | ESLint, `tsc --noEmit` |
+| `auth:generate` | Generate Better Auth tables into `src/db/schema/auth.ts` |
+| `db:generate` / `db:migrate` | Create / apply SQL migrations in `drizzle/` |
+| `db:push` | Push schema directly (prototyping) |
+| `db:seed` | Upsert the catalog seed data (idempotent) |
+| `db:studio` | Drizzle Studio |
 
-## Deploy on Vercel
+## Next steps
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Run `npm run auth:generate`, then add `export * from "./auth";` to `src/db/schema/index.ts`.
+2. `npm run db:generate && npm run db:migrate`.
+3. Enable auth methods (e.g. `emailAndPassword`) in `src/lib/auth.ts`.
+4. Fix `.env.local` with real values — `npm run build` currently fails on a clean checkout because `BETTER_AUTH_SECRET` (and likely other required vars) aren't set.
+5. Build a `/collections/[slug]` listing route — the `categories` table supports it for either axis (`department_id` or `product_type_id`); right now the only "listing" is the two product grids on the homepage.
+6. Wire up "Add to bag" once a cart exists (currently presentational, like the other unbuilt links: `/campaign`, `/atelier`, `/collections/*`).
+7. Drive `site-header.tsx`'s hardcoded `navLinks` from the `categories` table.

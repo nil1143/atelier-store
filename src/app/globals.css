@@ -1,26 +1,355 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Fonts reference the Next.js-injected vars, so they resolve inline. */
+@theme inline {
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-jost), "Jost", system-ui, sans-serif;
+
+  /* Theme-aware semantic colors: bg-canvas, text-foreground, border-line … */
+  --color-canvas: var(--bg);
+  --color-foreground: var(--fg);
+  --color-subtle: var(--bg-subtle);
+  --color-line: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Fixed palette: bg-ink, text-chalk … (do not flip with theme) */
+@theme {
+  --color-ink: #0a0a0a;
+  --color-chalk: #fafaf8;
+  --color-stone: #f0eeea;
+  --color-ash: #6b6560;
+  --color-mist: #c8c4be;
+  --color-gold: #b8a882;
+}
+
+:root {
+  --bg: #fafaf8;
+  --fg: #0a0a0a;
+  --bg-subtle: #f0eeea;
+  --border: #d9d5cf;
+  --accent: #8c7b55;
+  --muted: #6b6560;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --bg: #0c0c0b;
+    --fg: #f3f1ec;
+    --bg-subtle: #171614;
+    --border: #2e2c28;
+    --accent: #b8a882;
+    --muted: #9a948b;
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root[data-theme="dark"] {
+  --bg: #0c0c0b;
+  --fg: #f3f1ec;
+  --bg-subtle: #171614;
+  --border: #2e2c28;
+  --accent: #b8a882;
+  --muted: #9a948b;
+  color-scheme: dark;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 300;
+    line-height: 1.65;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--fg);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ─── Components ─────────────────────────────────────────────────────────── */
+@layer components {
+  /* Layout */
+  .container-page {
+    width: 100%;
+    max-width: 87.5rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  .container-narrow {
+    width: 100%;
+    max-width: 47.5rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-page { padding-inline: 1.5rem; }
+  }
+
+  @media (min-width: 1024px) {
+    .container-page { padding-inline: 3rem; }
+  }
+
+  .section { padding-block: 4rem; }
+
+  @media (min-width: 768px) {
+    .section { padding-block: 6rem; }
+  }
+
+  @media (min-width: 1024px) {
+    .section { padding-block: 8rem; }
+  }
+
+  /* Type scale */
+  .text-display {
+    font-family: var(--font-display);
+    font-size: clamp(2.75rem, 6vw, 5.5rem);
+    font-weight: 300;
+    line-height: 0.98;
+    letter-spacing: -0.01em;
+  }
+
+  .text-heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .text-label {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .text-product {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .text-caption {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* Links */
+  .link-nav {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: opacity 0.15s ease;
+  }
+
+  .link-nav:hover { opacity: 0.55; }
+
+  .link-inline {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+    transition: opacity 0.15s ease;
+  }
+
+  .link-inline:hover { opacity: 0.6; }
+
+  /* Buttons — square, uppercase, tracked */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.8125rem 2rem;
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    border-radius: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    appearance: none;
+  }
+
+  .btn-primary {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+
+  .btn-primary:hover { opacity: 0.82; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--fg);
+    border-color: var(--fg);
+  }
+
+  .btn-secondary:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: inherit;
+    padding-inline: 0;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+    text-decoration-thickness: 1px;
+  }
+
+  .btn-ghost:hover { opacity: 0.6; }
+
+  /* For use over photography — fixed colors, independent of theme */
+  .btn-light {
+    background: var(--color-chalk);
+    color: var(--color-ink);
+    border-color: var(--color-chalk);
+  }
+
+  .btn-light:hover { opacity: 0.85; }
+
+  .btn-sm {
+    min-height: 2.25rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.625rem;
+  }
+
+  /* Last in the block so it wins over the variants' :hover rules */
+  .btn:disabled {
+    opacity: 0.38;
+    pointer-events: none;
+  }
+
+  /* Borders */
+  .rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  .border-field {
+    border: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .border-field:focus {
+    outline: none;
+    border-color: var(--fg);
+  }
+
+  /* Navigation */
+  .nav {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 50;
+    width: 100%;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Product card — image-forward, no shadow or radius */
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .card-media {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-subtle);
+    aspect-ratio: 3 / 4;
+  }
+
+  .card-media img {
+    object-fit: cover;
+    transition: transform 0.7s ease;
+  }
+
+  .card:hover .card-media img { transform: scale(1.04); }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  /* Flush grid with 1px hairline gutters */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border-block: 1px solid var(--border);
+  }
+
+  .product-grid > * { background: var(--bg); }
+
+  @media (min-width: 1024px) {
+    .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  /* Gallery thumbnail — the frame itself is .card-media; this adds only size
+     and selected state. box-shadow rather than outline, so it cannot be
+     confused with the global :focus-visible outline. */
+  .gallery-thumb {
+    display: block;
+    width: 4.5rem;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+  }
+
+  .gallery-thumb:hover { opacity: 0.8; }
+
+  .gallery-thumb[aria-pressed="true"] {
+    opacity: 1;
+    box-shadow: 0 0 0 1px var(--fg);
+  }
+
+  /* box-shadow is dropped in forced-colors mode; keep a visible selected state. */
+  @media (forced-colors: active) {
+    .gallery-thumb[aria-pressed="true"] { border: 1px solid Highlight; }
+  }
 }
