@@ -1,4 +1,4 @@
-import { desc, eq, or } from "drizzle-orm";
+import { desc, eq, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { cacheLife } from "next/cache";
 import { db } from "@/db";
@@ -181,6 +181,33 @@ export async function getProductSlugs(): Promise<string[]> {
     .orderBy(products.slug);
 
   return rows.map((r) => r.slug);
+}
+
+export type CartProduct = Product & {
+  /** Units on hand. The cart caps every line at this. */
+  available: number;
+};
+
+/**
+ * The cart's view of products: everything a card shows, plus the raw stock
+ * number. The one place `quantity` leaves this module as a number — the rest
+ * of the storefront only ever sees the derived `StockState`.
+ *
+ * Cached like its neighbours, so a stock cut can be a few minutes stale here.
+ * That is sound for a cart, which reserves nothing; authoritative stock
+ * enforcement belongs in order creation, with checkout.
+ */
+export async function getCartProducts(slugs: string[]): Promise<CartProduct[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  // `inArray` with an empty list would compile to `IN ()`, which is a syntax
+  // error in Postgres.
+  if (slugs.length === 0) return [];
+
+  const rows = await selectProducts().where(inArray(products.slug, slugs));
+
+  return rows.map((row) => ({ ...toProduct(row), available: row.quantity }));
 }
 
 /**

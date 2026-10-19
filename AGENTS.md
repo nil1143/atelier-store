@@ -39,6 +39,17 @@ HTTP driver — that driver has no transactions.
 **`src/db/schema/auth.ts` is generated** by `npm run auth:generate` from
 `src/lib/auth.ts`. Never hand-edit it.
 
+**Auth reads go through `src/lib/session.ts`.** `requireUser` / `requireAdmin`
+read the request, so under Cache Components they must run inside a
+`<Suspense>` boundary, never at a layout's top level. `src/proxy.ts` only checks
+that a session cookie exists; it is not the security boundary. **Every admin
+Server Action and Route Handler must call `requireAdmin()` itself** — a page's
+check does not protect them. `user.role` cannot be set through the auth API
+(`input: false`); grant admin with `npm run auth:promote -- <email>`.
+
+`auth:generate` uses the deprecated `@better-auth/cli` on purpose: the newer
+`auth` CLI cannot resolve the `@/` import alias in `src/lib/auth.ts`.
+
 **Dark-mode token values are duplicated** in a `prefers-color-scheme` block
 *and* a `:root[data-theme="dark"]` block in `globals.css` — edit both. There is
 no JS theme toggle. Reuse the existing component classes before adding new ones.

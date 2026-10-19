@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
+import { Suspense } from "react";
+import { BagCount } from "@/components/bag-count";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
@@ -32,7 +34,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <p className="text-label bg-ink px-4 py-2 text-center text-[0.625rem] text-chalk">
           Complimentary shipping and returns on every order
         </p>
-        <SiteHeader />
+        <SiteHeader
+          bagCount={
+            <Suspense fallback={null}>
+              <BagCount />
+            </Suspense>
+          }
+        />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </body>

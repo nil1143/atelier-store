@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AccountIcon, BagIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
 
 const navLinks = [
@@ -12,7 +12,11 @@ const navLinks = [
   { href: "/collections/jewellery", label: "Jewellery" },
 ];
 
-export function SiteHeader() {
+/**
+ * `bagCount` is rendered on the server and passed in: this is a Client
+ * Component, so it cannot read the cart cookie itself.
+ */
+export function SiteHeader({ bagCount }: { bagCount?: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -54,8 +58,12 @@ export function SiteHeader() {
           <Link href="/account" className="hidden p-2 transition-opacity hover:opacity-55 sm:block" aria-label="Account">
             <AccountIcon />
           </Link>
-          <Link href="/cart" className="-mr-2 p-2 transition-opacity hover:opacity-55" aria-label="Shopping bag">
+          {/* No aria-label: the name is composed from the contents so the
+              count is part of it ("Shopping bag, 2"). */}
+          <Link href="/cart" className="relative -mr-2 p-2 transition-opacity hover:opacity-55">
             <BagIcon />
+            <span className="sr-only">Shopping bag</span>
+            {bagCount}
           </Link>
         </div>
       </div>

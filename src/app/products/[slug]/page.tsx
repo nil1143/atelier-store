@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AddToBag } from "@/components/add-to-bag";
 import { ProductGallery } from "@/components/product-gallery";
 import {
   formatPrice,
@@ -97,9 +98,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             {stockLabels[product.stock]}
           </p>
 
-          <button type="button" className="btn btn-primary mt-8 w-full" disabled={soldOut}>
-            {soldOut ? "Sold out" : "Add to bag"}
-          </button>
+          <AddToBag slug={product.slug} soldOut={soldOut} />
 
           <dl className="mt-12 border-t border-line">
             {details.map((d) => (
