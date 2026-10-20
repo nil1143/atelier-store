@@ -1,6 +1,6 @@
 import { desc, eq, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
 import {
   categories,
@@ -41,6 +41,17 @@ export const stockLabels: Record<StockState, string> = {
   "low-stock": "Only a few left",
   "sold-out": "Sold out",
 };
+
+/**
+ * One tag over every catalogue read. `cacheLife("minutes")` alone would leave
+ * a sold-out piece advertised as in stock until the window lapsed; paying for
+ * the last one is exactly when that matters, so fulfilment revalidates this
+ * tag the moment stock moves.
+ *
+ * One tag rather than per-product tags: stock changes are rare, the catalogue
+ * is small, and a single revalidation keeps the invalidation rule total.
+ */
+export const CATALOG_TAG = "catalog";
 
 /** At or below this many units, the storefront says "Only a few left". */
 const LOW_STOCK_THRESHOLD = 3;
@@ -130,6 +141,7 @@ export async function getHomepageSection(
 ): Promise<Product[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const rows = await selectProducts()
     .where(eq(products.section, section))
@@ -150,6 +162,7 @@ const NEW_ARRIVALS_LIMIT = 24;
 export async function getNewArrivals(): Promise<Product[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const rows = await selectProducts()
     .orderBy(desc(products.createdAt), products.slug)
@@ -163,6 +176,7 @@ export async function getProductBySlug(
 ): Promise<Product | undefined> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const rows = await selectProducts().where(eq(products.slug, slug)).limit(1);
   const row = rows[0];
@@ -174,6 +188,7 @@ export async function getProductBySlug(
 export async function getProductSlugs(): Promise<string[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const rows = await db
     .select({ slug: products.slug })
@@ -200,6 +215,7 @@ export type CartProduct = Product & {
 export async function getCartProducts(slugs: string[]): Promise<CartProduct[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   // `inArray` with an empty list would compile to `IN ()`, which is a syntax
   // error in Postgres.
@@ -240,6 +256,7 @@ export async function getCategoryBySlug(
 ): Promise<Category | undefined> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const rows = await db
     .select(categoryColumns)
@@ -262,6 +279,7 @@ export async function getCategoryBySlug(
 export async function getProductsByCategory(slug: string): Promise<Product[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const rows = await selectProducts()
     .where(or(eq(department.slug, slug), eq(productType.slug, slug)))
@@ -277,6 +295,7 @@ export async function getProductsByCategory(slug: string): Promise<Product[]> {
 export async function getCategories(): Promise<Category[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   return db.select(categoryColumns).from(categories).orderBy(categories.sortOrder);
 }
@@ -285,6 +304,7 @@ export async function getCategories(): Promise<Category[]> {
 export async function getCollectionTiles(): Promise<CollectionTile[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const all = await getCategories();
 
@@ -297,6 +317,7 @@ export async function getCollectionTiles(): Promise<CollectionTile[]> {
 export async function getCategorySlugs(): Promise<string[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
 
   const all = await getCategories();
 

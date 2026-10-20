@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { startCheckout } from "@/app/checkout/actions";
 import { getCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/catalog";
 import { removeLine, setLineQuantity } from "./actions";
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default function CartPage() {
+export default function CartPage({ searchParams }: PageProps<"/cart">) {
   return (
     <div className="container-page pt-10 pb-16 md:pt-16 md:pb-24">
       <h1 className="text-heading">Shopping bag</h1>
@@ -19,13 +20,20 @@ export default function CartPage() {
           inside a boundary — an uncached read in the prerendered shell would
           fail the build under Cache Components. */}
       <Suspense fallback={<div className="mt-8 min-h-[18rem] md:mt-12" />}>
-        <CartContents />
+        <CartContents searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function CartContents() {
+async function CartContents({
+  searchParams,
+}: {
+  searchParams: PageProps<"/cart">["searchParams"];
+}) {
+  // Checkout found live stock short of what the bag showed, reduced it, and
+  // sent the buyer back to approve the new total before anything charges.
+  const adjusted = (await searchParams).checkout === "adjusted";
   const { lines, subtotalCents, itemCount } = await getCart();
 
   if (lines.length === 0) {
@@ -138,12 +146,21 @@ async function CartContents() {
           </div>
         </dl>
 
-        {/* Checkout is not built yet. The quantity cap above is a shop-front
-            guard, not a stock reservation: whatever creates orders has to
-            re-check and decrement stock itself. */}
-        <button type="button" className="btn btn-primary mt-8 w-full" disabled>
-          Checkout coming soon
-        </button>
+        {adjusted && (
+          <p role="status" className="text-caption text-accent mt-6">
+            Availability changed while you were shopping. Your bag has been
+            updated — review the total and try again.
+          </p>
+        )}
+
+        {/* The cap above is a shop-front guard against cached stock, not a
+            reservation. `startCheckout` re-quotes against live stock and live
+            prices, and is what the order is built from. */}
+        <form action={startCheckout} className="mt-8">
+          <button type="submit" className="btn btn-primary w-full">
+            Checkout
+          </button>
+        </form>
         <Link href="/collections" className="btn btn-ghost mt-6">
           Continue shopping
         </Link>

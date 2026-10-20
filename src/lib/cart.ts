@@ -130,3 +130,16 @@ export async function getCart(): Promise<Cart> {
 export async function getCartItemCount(): Promise<number> {
   return (await getCart()).itemCount;
 }
+
+/**
+ * The bag as quantities alone, with the cookie's short keys expanded. This is
+ * what checkout quotes against: it is the raw *request*, not the clamped view
+ * `getCart` builds, because the clamping there runs on cached stock and
+ * checkout has to re-decide against live stock itself.
+ */
+export async function readRequestedLines(): Promise<
+  { slug: string; quantity: number }[]
+> {
+  const stored = await readStoredCart();
+  return stored.map(({ s, q }) => ({ slug: s, quantity: q }));
+}
