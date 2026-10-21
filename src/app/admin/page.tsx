@@ -1,14 +1,32 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { formatPrice } from "@/lib/catalog";
-import { listOrders, orderStatusLabels } from "@/lib/orders";
 import { requireAdmin } from "@/lib/session";
+import { AdminNav } from "./admin-nav";
 
 export const metadata: Metadata = {
   title: "Admin — Atelier",
   robots: { index: false },
 };
+
+const sections = [
+  {
+    href: "/admin/products",
+    label: "Products",
+    blurb: "Every piece, its price and the stock on hand. Edit stock in place.",
+  },
+  {
+    href: "/admin/categories",
+    label: "Categories",
+    blurb: "Departments and product types, and the homepage tile art.",
+  },
+  {
+    href: "/admin/orders",
+    label: "Orders",
+    blurb: "Every order, newest first, with anything that oversold flagged.",
+  },
+];
 
 export default function AdminPage() {
   return (
@@ -28,45 +46,24 @@ async function AdminHome() {
   await connection();
 
   const user = await requireAdmin("/admin");
-  // Deliberately after the check, not in parallel with it — a non-admin must
-  // not cause a read of every customer's orders.
-  const orders = await listOrders();
 
   return (
     <>
       <h1 className="text-heading">Admin</h1>
       <p className="mt-4 text-muted">Signed in as {user.email}.</p>
 
-      <h2 className="text-label text-muted mt-12">Orders</h2>
-      {orders.length === 0 ? (
-        <p className="mt-4 border-t border-line pt-6 text-muted">
-          No orders yet.
-        </p>
-      ) : (
-        <ul className="mt-4 border-t border-line">
-          {orders.map((order) => (
-            <li key={order.id} className="border-b border-line py-5">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                <p className="text-product">{order.email}</p>
-                <p className="tabular-nums">{formatPrice(order.totalCents)}</p>
-              </div>
-              <p className="text-caption">
-                {order.createdAt.toLocaleString("en-GB")} ·{" "}
-                {orderStatusLabels[order.status]}
-                {/* The one state that needs a human: paid, but stock had gone. */}
-                {order.oversold && (
-                  <span className="text-accent"> · oversold</span>
-                )}
-              </p>
-              <p className="text-caption">
-                {order.items
-                  .map((i) => `${i.name} ×${i.quantity}`)
-                  .join(" · ")}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
+      <AdminNav />
+
+      <ul className="mt-8">
+        {sections.map((s) => (
+          <li key={s.href} className="border-b border-line py-5">
+            <Link href={s.href} className="link-inline text-product">
+              {s.label}
+            </Link>
+            <p className="text-caption mt-1">{s.blurb}</p>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }

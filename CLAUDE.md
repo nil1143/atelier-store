@@ -76,6 +76,50 @@ no JS theme toggle. Reuse the existing component classes before adding new ones.
 must sit in the root to resolve `.env.local` through `dotenv` has to be deleted
 before building.
 
+## Admin back office
+
+`/admin` is products, categories and orders. No deletes, no image upload, no
+order-status editing — both tables are referenced `onDelete: "restrict"`, so
+deletes are a design decision, not an omission.
+
+**`src/lib/admin.ts` reads the catalogue uncached**, the same split `orders.ts`
+makes and for the same reason: an admin saving a quantity on top of a
+minutes-stale number has overwritten a sale. It also needs columns the
+storefront type hides (`id`, raw `quantity`, `sortOrder`, `section`, both
+category ids). Every write there ends with `revalidateTag(CATALOG_TAG,
+{ expire: 0 })`.
+
+**Each Server Action additionally calls `revalidatePath`** on the admin route it
+affects. The tag expires the cached *storefront*; the path expires the *client
+router cache*, without which a saved row redisplays its pre-save value.
+
+**Every action in `src/app/admin/actions.ts` opens with `requireAdmin()`**
+before reading the form — a Server Action is its own entry point. Pages call
+`requireAdmin()` inside their `<Suspense>` child, never at the top level; for
+the same reason `/admin/products/[slug]/edit` passes `params` **unawaited** into
+that child (awaiting it at page level fails the prerender with
+`blocking-prerender-dynamic`).
+
+**Any new admin form containing a `<select>` must use
+`useRestoreSelects`.** React runs a native form reset after an action, which
+restores `defaultValue` attributes on inputs but clears a `<select>`, whose
+selection is a DOM property — a rejected save would silently drop the chosen
+category. Controlled state and remounting both failed; the post-reset effect is
+the fix. Actions echo every typed field back in `AdminFormState.values` as a
+fresh object, which that effect keys on.
+
+**A client component may not import `@/lib/catalog`** — it reaches `db` and
+`cacheTag`. Compute option lists server-side and pass them as props.
+
+Action validation deliberately mirrors the DB constraints
+(`products_images_not_empty`, `products_has_category`,
+`products_quantity_non_negative`, the unique `slug` indexes) rather than letting
+them surface as unreadable failures.
+
+`setProductQuantity` writes an **absolute** value — an admin save racing a
+fulfilment decrement is last-write-wins. That is correct for a back office
+recording a counted figure; it is not an adjustment API.
+
 ## Stripe Checkout
 
 Sandbox `acct_1US1snRrCouIfAx2` ("nil1143"); a second sandbox exists — do not
@@ -145,7 +189,8 @@ forged host aim a buyer's return URL elsewhere.
 
 ## Verifying UI work
 
-A screenshot pass has caught real flaws here twice. `resize_window` reports
+A screenshot pass has caught real flaws here twice — the admin defects above
+were all found by running the app, not by the build. `resize_window` reports
 success without resizing — for responsive checks, load the page in a
 same-origin iframe at the target width, since media queries evaluate against
 the iframe's own viewport.
@@ -155,6 +200,14 @@ Benign console noise on the PDP — do not chase:
 - An LCP warning naming the gallery's first image. Next keys its image registry
   by rendered `src` and warns on *every* intermediate LCP candidate; the one it
   names is the lazy thumbnail that paints before the large eager frame.
+
+**`pkill` does not stop a Next server on this box, and fails silently** — the
+replacement `npm start` dies with `EADDRINUSE` into its log while the old server
+keeps the port, so the readiness check passes and you test a stale build. Kill
+by PID (`Get-NetTCPConnection -LocalPort <port> -State Listen` → `taskkill //F
+//PID <pid>`) and `grep -c EADDRINUSE` the log after a restart. Port 3000 is
+usually held by another of the user's node processes — serve on 3001 and leave
+whatever owns 3000 alone.
 
 `src/lib/env.ts` throws at module load, so `npm run build` fails on a checkout
 without `.env.local` — it dies collecting page data for `/api/auth/[...all]`,

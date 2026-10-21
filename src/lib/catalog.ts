@@ -2,12 +2,7 @@ import { desc, eq, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
-import {
-  categories,
-  products,
-  type categoryKind,
-  type homepageSection,
-} from "@/db/schema";
+import { categories, categoryKind, homepageSection, products } from "@/db/schema";
 
 // The two category axes are the same table joined twice, so each needs an alias.
 const department = alias(categories, "department");
@@ -42,6 +37,14 @@ export const stockLabels: Record<StockState, string> = {
   "sold-out": "Sold out",
 };
 
+/** The curated grids a product may be filed into, and how each reads. */
+export const homepageSections = homepageSection.enumValues;
+
+export const homepageSectionLabels: Record<HomepageSection, string> = {
+  "new-arrivals": "New arrivals",
+  "leather-goods": "Leather goods",
+};
+
 /**
  * One tag over every catalogue read. `cacheLife("minutes")` alone would leave
  * a sold-out piece advertised as in stock until the window lapsed; paying for
@@ -56,7 +59,12 @@ export const CATALOG_TAG = "catalog";
 /** At or below this many units, the storefront says "Only a few left". */
 const LOW_STOCK_THRESHOLD = 3;
 
-const stockStateFor = (quantity: number): StockState => {
+/**
+ * The one place the three display states are derived from the stored number.
+ * Exported because the admin products list shows the raw quantity *and* the
+ * label the storefront will give it, and must not re-guess the threshold.
+ */
+export const stockStateFor = (quantity: number): StockState => {
   if (quantity === 0) return "sold-out";
   if (quantity <= LOW_STOCK_THRESHOLD) return "low-stock";
   return "in-stock";
@@ -231,6 +239,13 @@ export async function getCartProducts(slugs: string[]): Promise<CartProduct[]> {
  * shoes, …). The `/collections` index groups by it; nothing else needs it.
  */
 export type CategoryKind = (typeof categoryKind.enumValues)[number];
+
+export const categoryKinds = categoryKind.enumValues;
+
+export const categoryKindLabels: Record<CategoryKind, string> = {
+  department: "Department",
+  type: "Product type",
+};
 
 export type Category = {
   slug: string;
