@@ -196,7 +196,11 @@ same-origin iframe at the target width, since media queries evaluate against
 the iframe's own viewport.
 
 Benign console noise on the PDP — do not chase:
-- `params accessed outside <Suspense>` in dev.
+- `params accessed outside <Suspense>` in dev — silenced by `export const
+  instant = false` on `/products/[slug]` and `/collections/[slug]`. Both pages
+  are keyed entirely on the slug, so there is no shell to show before `params`
+  resolves; every param is prerendered and every query cached, so the
+  navigation blocks only on a static payload. Do not add `<Suspense>` instead.
 - An LCP warning naming the gallery's first image. Next keys its image registry
   by rendered `src` and warns on *every* intermediate LCP candidate; the one it
   names is the lazy thumbnail that paints before the large eager frame.

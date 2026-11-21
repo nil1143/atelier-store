@@ -25,6 +25,11 @@ const details = [
   },
 ];
 
+// The whole page is keyed on the slug, so there is no shell to show before
+// `params` resolves. Every param is prerendered by `generateStaticParams` and
+// every query is cached, so the navigation blocks only on a static payload.
+export const instant = false;
+
 export async function generateStaticParams() {
   return (await getProductSlugs()).map((slug) => ({ slug }));
 }

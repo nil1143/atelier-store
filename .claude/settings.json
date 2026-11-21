@@ -16,7 +16,8 @@
       "Edit(.env.*)"
     ],
     "ask": [
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git commit *)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { desc, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "@/db";
@@ -204,6 +204,62 @@ export async function getProductSlugs(): Promise<string[]> {
     .orderBy(products.slug);
 
   return rows.map((r) => r.slug);
+}
+
+/** Longest search term accepted; anything past it is ignored. */
+export const SEARCH_MAX_LENGTH = 100;
+
+/** Caps a broad term (a single letter) at a grid's worth of results. */
+const SEARCH_LIMIT = 48;
+
+/** `%`, `_` and `\` are ILIKE metacharacters; a shopper typing them means them. */
+const escapeLike = (word: string) => word.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Normalises a raw query-string value into the term `searchProducts` takes, so
+ * the page and the cache key agree on what "the same search" is.
+ */
+export const normaliseSearchTerm = (raw: string | string[] | undefined) =>
+  (Array.isArray(raw) ? raw[0] : raw ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, SEARCH_MAX_LENGTH)
+    .toLowerCase();
+
+/**
+ * Every word must appear in the name, material or either category, so
+ * "black leather bag" narrows rather than widens. A substring match is enough
+ * for a catalogue this size; it would want a full-text index long before it
+ * wanted a search service.
+ *
+ * Cached per term: the term is the argument, so it is the cache key.
+ */
+export async function searchProducts(term: string): Promise<Product[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CATALOG_TAG);
+
+  const words = term.split(" ").filter(Boolean);
+  if (words.length === 0) return [];
+
+  const rows = await selectProducts()
+    .where(
+      and(
+        ...words.map((word) => {
+          const pattern = `%${escapeLike(word)}%`;
+          return or(
+            ilike(products.name, pattern),
+            ilike(products.material, pattern),
+            ilike(department.name, pattern),
+            ilike(productType.name, pattern),
+          );
+        }),
+      ),
+    )
+    .orderBy(desc(products.createdAt), products.slug)
+    .limit(SEARCH_LIMIT);
+
+  return rows.map(toProduct);
 }
 
 export type CartProduct = Product & {
