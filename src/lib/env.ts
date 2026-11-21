@@ -19,9 +19,16 @@ export const env = {
   /**
    * Prefer a restricted key (`rk_`) scoped to writing Checkout Sessions and
    * reading PaymentIntents — nothing here needs a full secret key.
+   *
+   * Test mode only: the deployed store is a portfolio demo that must never
+   * take a real payment, so a live key is refused wherever it would be used.
    */
   get STRIPE_SECRET_KEY() {
-    return required("STRIPE_SECRET_KEY");
+    const key = required("STRIPE_SECRET_KEY");
+    if (!key.startsWith("sk_test_") && !key.startsWith("rk_test_")) {
+      throw new Error("STRIPE_SECRET_KEY must be a test-mode key (sk_test_ or rk_test_)");
+    }
+    return key;
   },
   get STRIPE_WEBHOOK_SECRET() {
     return required("STRIPE_WEBHOOK_SECRET");

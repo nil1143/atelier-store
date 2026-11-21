@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { BagCount } from "@/components/bag-count";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { env } from "@/lib/env";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -19,9 +20,18 @@ const jost = Jost({
   weight: ["300", "400", "500"],
 });
 
+const description = "Ready-to-wear, leather goods and jewellery from Atelier.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(env.APP_URL),
   title: "Atelier Store",
-  description: "Ready-to-wear, leather goods and jewellery from Atelier.",
+  description,
+  openGraph: {
+    type: "website",
+    siteName: "Atelier Store",
+    title: "Atelier Store",
+    description,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -32,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <p className="text-label bg-ink px-4 py-2 text-center text-[0.625rem] text-chalk">
-          Complimentary shipping and returns on every order
+          Portfolio demo · Stripe test mode · pay with 4242 4242 4242 4242, any future date, any CVC
         </p>
         <SiteHeader
           bagCount={

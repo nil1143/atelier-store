@@ -2,28 +2,18 @@ import Link from "next/link";
 
 const columns = [
   {
+    title: "Shop",
+    links: [
+      { href: "/collections/new", label: "New arrivals" },
+      { href: "/collections", label: "Collections" },
+      { href: "/search", label: "Search" },
+    ],
+  },
+  {
     title: "Client services",
     links: [
-      { href: "/contact", label: "Contact us" },
-      { href: "/shipping", label: "Shipping" },
-      { href: "/returns", label: "Returns and exchanges" },
-      { href: "/care", label: "Product care" },
-    ],
-  },
-  {
-    title: "The house",
-    links: [
-      { href: "/atelier", label: "Our atelier" },
-      { href: "/craft", label: "Materials and craft" },
-      { href: "/appointments", label: "Book an appointment" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { href: "/privacy", label: "Privacy policy" },
-      { href: "/terms", label: "Terms of sale" },
-      { href: "/cookies", label: "Cookie settings" },
+      { href: "/account", label: "Your account" },
+      { href: "/cart", label: "Shopping bag" },
     ],
   },
 ];
@@ -31,7 +21,7 @@ const columns = [
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line bg-subtle">
-      <div className="container-page grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-8">
+      <div className="container-page grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(2,1fr)] md:gap-8">
         <div className="flex flex-col gap-4">
           <p className="font-display text-xl uppercase tracking-[0.38em]">Atelier</p>
           <p className="max-w-xs text-muted">

@@ -22,7 +22,7 @@ No test runner is configured yet.
 
 ## Next.js 16
 
-This project is on Next.js **16.4.0**, which differs from most training data.
+This project is on Next.js **16.4.6**, which differs from most training data.
 Read `node_modules/next/dist/docs/` before writing Next-specific code.
 
 Gotchas already hit here — do not "correct" these back:
@@ -122,7 +122,9 @@ recording a counted figure; it is not an adjustment API.
 
 ## Stripe Checkout
 
-Sandbox `acct_1US1snRrCouIfAx2` ("nil1143"); a second sandbox exists — do not
+**Test mode permanently** — this is a portfolio demo; `env.ts` refuses any key
+that is not `sk_test_`/`rk_test_`. Sandbox `acct_1US1snRrCouIfAx2` ("nil1143");
+a second sandbox exists — do not
 use it. Nothing is live, and there are no production keys in this repo.
 
 **`src/lib/orders.ts` reads the catalogue uncached, on purpose.** It is the one
