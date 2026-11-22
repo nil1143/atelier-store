@@ -9,6 +9,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/",
     "/collections",
     "/collections/new",
+    "/campaign",
+    "/atelier",
     ...categories.map((slug) => `/collections/${slug}`),
     ...products.map((slug) => `/products/${slug}`),
   ].map((path) => ({ url: `${env.APP_URL}${path === "/" ? "" : path}` }));

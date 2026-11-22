@@ -2,17 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import { getCollectionTiles, getHomepageSection } from "@/lib/catalog";
+import { atelierImage, heroImage, tailoringImages } from "@/lib/editorial";
 
-// Editorial imagery, not catalog data: these belong to this page's layout and
-// this is their only consumer.
-const heroImage =
-  "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1600";
-const tailoringImages = [
-  "https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&q=80&w=1600",
-  "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=1600",
-] as const;
-const atelierImage =
-  "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=1600";
+/** Category tiles on the homepage — one desktop row; "View all" lists the rest. */
+const CATEGORY_LIMIT = 4;
 
 const services = [
   {
@@ -41,8 +34,8 @@ export default async function Home() {
       {/* Hero */}
       <section className="relative h-[82svh] min-h-[32rem] max-h-[60rem] overflow-hidden bg-ink">
         <Image
-          src={heroImage}
-          alt="A woman in a pale blue wool coat standing in a cathedral square"
+          src={heroImage.src}
+          alt={heroImage.alt}
           fill
           preload
           sizes="100vw"
@@ -77,10 +70,12 @@ export default async function Home() {
             View all
           </Link>
         </div>
-        <div className="product-grid">
-          {newArrivals.map((p) => (
-            <ProductCard key={p.slug} product={p} />
-          ))}
+        <div className="container-page">
+          <div className="product-grid">
+            {newArrivals.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -88,15 +83,11 @@ export default async function Home() {
       <section className="section">
         <div className="container-page">
           <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-            {tailoringImages.map((src, i) => (
+            {tailoringImages.map(({ src, alt }) => (
               <div key={src} className="relative aspect-[4/5] overflow-hidden bg-subtle">
                 <Image
                   src={src}
-                  alt={
-                    i === 0
-                      ? "A man in a navy two-piece suit walking past a glass facade"
-                      : "Close-up of hands buttoning a charcoal suit jacket"
-                  }
+                  alt={alt}
                   fill
                   sizes="(min-width: 768px) 50vw, 100vw"
                   className="object-cover"
@@ -110,7 +101,7 @@ export default async function Home() {
             <p className="mt-4 text-muted">
               Half-canvassed jackets with a softer shoulder, and trousers finished by hand in our workshop outside Naples.
             </p>
-            <Link href="/collections/men" className="btn btn-secondary mt-8">
+            <Link href="/collections/suits" className="btn btn-secondary mt-8">
               Discover tailoring
             </Link>
           </div>
@@ -127,7 +118,7 @@ export default async function Home() {
             </Link>
           </div>
           <ul className="grid grid-cols-2 gap-x-3 gap-y-10 lg:grid-cols-4 lg:gap-x-4">
-            {collections.map((c) => (
+            {collections.slice(0, CATEGORY_LIMIT).map((c) => (
               <li key={c.slug}>
                 <Link href={`/collections/${c.slug}`} className="card group">
                   <div className="card-media">
@@ -150,8 +141,8 @@ export default async function Home() {
       <section className="grid bg-subtle md:grid-cols-2">
         <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[40rem]">
           <Image
-            src={atelierImage}
-            alt="Coats and knitwear hanging in a softly lit shop window"
+            src={atelierImage.src}
+            alt={atelierImage.alt}
             fill
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover"
@@ -186,10 +177,12 @@ export default async function Home() {
             View all
           </Link>
         </div>
-        <div className="product-grid">
-          {leatherGoods.map((p) => (
-            <ProductCard key={p.slug} product={p} />
-          ))}
+        <div className="container-page">
+          <div className="product-grid">
+            {leatherGoods.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
         </div>
       </section>
 
